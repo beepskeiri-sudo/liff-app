@@ -63,6 +63,9 @@ async function sendStamp(action) {
 //log("3: profile取得成功");
  
  // URLパラメータ取得
+    const context = liff.getContext();
+    const profile = await liff.getProfile();
+    
     const params = new URLSearchParams(window.location.search);
     const action = params.get("action");
     const genbaCd = params.get("genba");
@@ -94,6 +97,10 @@ async function sendStamp(action) {
     const result = await response.json();
 
         document.getElementById("message").innerText = result.message || "完了しました";
+// 成功したら1.5秒後に自動でウィンドウを閉じる
+        setTimeout(() => {
+        liff.closeWindow();
+        }, 1500);
 
       } catch (e) {
         document.getElementById("message").innerText = "エラー: " + e;
@@ -104,8 +111,15 @@ async function sendStamp(action) {
     const params = new URLSearchParams(window.location.search);
     const action = params.get("action");
 
+// セッションストレージによるタスク復帰時の重複送信ガード
+    if (sessionStorage.getItem("alreadySent") === "true") {
+      document.getElementById("message").innerText = "処理済みです\n画面を閉じてください。";
+      // 念のためここでも自動クローズを試みる
+      setTimeout(() => { liff.closeWindow(); }, 1500);
+    } else {
+      sessionStorage.setItem("alreadySent", "true");
     sendStamp(action);
-
+    }
 </script>
 </body>
 </html>
