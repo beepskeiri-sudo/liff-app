@@ -104,15 +104,7 @@ log("0: action取得");
     const params = new URLSearchParams(window.location.search);
     const action = params.get("action");
 
-// セッションストレージによるタスク復帰時の重複送信ガード
-    if (sessionStorage.getItem("alreadySent") === "true") {
-      document.getElementById("message").innerText = "処理済みです\n画面を閉じてください。";
-      // 念のためここでも自動クローズを試みる
-      setTimeout(() => { liff.closeWindow(); }, 1500);
-    } else {
-      sessionStorage.setItem("alreadySent", "true");
-    sendStamp(action);
-    }
+
 </script>
 </body>
 </html>
