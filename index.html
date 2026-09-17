@@ -29,28 +29,42 @@
    </style>
 
   <script>
-function log(msg) {
+　　// ========================================================== 
+    // 二重送信防止 
+    // ==========================================================
+    let isProcessing = false;
+    
+    function log(msg) {
       document.getElementById("message").innerText = msg;
       console.log(msg);
     }
-async function sendStamp() {
-  try {
 
- // liffIdセット
+    // ========================================================== 
+    // 打刻処理 
+    // ==========================================================
+async function sendStamp() {
+  
+    if (isProcessing) { console.log("すでに処理中のため送信しません"); return; }
+// 処理開始 
+    isProcessing = true;
+try { 
+// liffIdセット
 log("1: liff.init開始");
 //log(window.location.href);
-    try {
-  if (window.parent !== window) {
+  try {
+  //if (window.parent !== window) {
   // iframeの中にいる場合、親ウィンドウのURLを確認する処理
   // GASの場合は回避が難しいことが多いため、
   // 以下の設定で初期化を試みる
-}    
+  //}    
   await liff.init({ liffId: "2009820268-v3E9yC4f", withLoginOnExternalBrowser: true 
     });
   log("2: liff.init成功");
 } catch (err) {
-//  log("LIFF INIT ERROR: " + JSON.stringify(err));
-  return;
+//  console.log("LIFF INIT ERROR: " + JSON.stringify(err));
+    isProcessing = false;
+    document.getElementById("message").innerText = "LIFFの初期化に失敗しました。";
+    return;
 }
   if (!liff.isLoggedIn()) {
       liff.login();
@@ -62,7 +76,7 @@ log("1: liff.init開始");
 log("3: profile取得成功");
   
     const context = liff.getContext();
-    log("LIFF context: " + JSON.stringify(context));
+    console.log("LIFF context:", context);
     const profile = await liff.getProfile();
 // URLパラメータ取得    
     const params = new URLSearchParams(window.location.search);
@@ -85,22 +99,34 @@ log("5: fetch開始");
         userId: profile.userId,
         displayName: profile.displayName
       })
-    });
+    }
+ );
 log("6: fetch成功");
 
+  // ====================================================== 
+  // GASからの結果取得 
+  // ======================================================
     const result = await response.json();
 
-        document.getElementById("message").innerText = result.message || "完了しました";
-// 成功したら1.5秒後に自動でウィンドウを閉じる
+        document.getElementById("message").innerText = 
+          result.message || "完了しました";
+/// 成功したら1.5秒後に自動でウィンドウを閉じる
         setTimeout(() => {
         liff.closeWindow();
         }, 1500);
 
       } catch (e) {
-        document.getElementById("message").innerText = "エラー: " + e;
+        console.error(e);
+        document.getElementById("message").innerText = 
+        "エラーが発生しました。\n" + e;  
+     
+     // エラーの場合だけ再実行可能にする 
+        isProcessing = false;
       }
     }
- // URLから action を取得
+// ========================================================== 
+// LIFF起動時に1回だけ実行 
+// ==========================================================
 log("0: 処理開始");   
 
 sendStamp();
