@@ -100,15 +100,10 @@ log("6: fetch成功");
       }
     }
  // URLから action を取得
-log("0: action取得");
-    const params = new URLSearchParams(window.location.search);
-    const action = params.get("action");
-log("0.5: action=" + action);
-
-log("0.8: sendStamp呼び出し前");
+log("0: action取得");   
 
 sendStamp(action);
-log("0.9: sendStamp呼び出し後");
+
 </script>
 </body>
 </html>
