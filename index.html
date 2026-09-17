@@ -33,7 +33,7 @@ function log(msg) {
       document.getElementById("message").innerText = msg;
       console.log(msg);
     }
-async function sendStamp(action) {
+async function sendStamp() {
   try {
 
  // liffIdセット
@@ -100,9 +100,9 @@ log("6: fetch成功");
       }
     }
  // URLから action を取得
-log("0: action取得");   
+log("0: 処理開始");   
 
-sendStamp(action);
+sendStamp();
 
 </script>
 </body>
