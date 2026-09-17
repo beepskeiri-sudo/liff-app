@@ -62,6 +62,7 @@ log("1: liff.init開始");
 log("3: profile取得成功");
   
     const context = liff.getContext();
+    log("LIFF context: " + JSON.stringify(context));
     const profile = await liff.getProfile();
 // URLパラメータ取得    
     const params = new URLSearchParams(window.location.search);
