@@ -37,7 +37,7 @@ async function sendStamp(action) {
   try {
 
  // liffIdセット
-//log("1: liff.init開始");
+log("1: liff.init開始");
 //log(window.location.href);
     try {
   if (window.parent !== window) {
@@ -47,7 +47,7 @@ async function sendStamp(action) {
 }    
   await liff.init({ liffId: "2009820268-v3E9yC4f", withLoginOnExternalBrowser: true 
     });
-//  log("2: liff.init成功");
+  log("2: liff.init成功");
 } catch (err) {
 //  log("LIFF INIT ERROR: " + JSON.stringify(err));
   return;
@@ -59,30 +59,24 @@ async function sendStamp(action) {
     // 修正ポイント2: パラメータをURLからではなくLIFFコンテキストから取る
     // (LINE内ブラウザで開いている場合、こちらの方が確実です)
   
-//log("3: profile取得成功");
- 
- // URLパラメータ取得
+log("3: profile取得成功");
+  
     const context = liff.getContext();
     const profile = await liff.getProfile();
-    
+// URLパラメータ取得    
     const params = new URLSearchParams(window.location.search);
     const action = params.get("action");
     const genbaCd = params.get("genba");
     const date = params.get("date");
 
-// log("4: データ取得成功 (action:${action})");
+ log("4: データ取得成功 (action:${action})");
 
     document.getElementById("message").innerText = "送信中...";
-//log("5: fetch開始");
+log("5: fetch開始");
 
  // エンドポイントURLを変更
      const response = await fetch("https://script.google.com/macros/s/AKfycbyQqdkxzv88kkfp3dQntI1hWOZVhh8HxIBxIr9v9IP6jeMijmDC-1YgpuIBHokNgJ0/exec", 
- //     const response = await fetch("https://google.com",
-    {
       method: "POST",
- //     headers: {
- //       "Content-Type": "application/json"
- //     },
       body: JSON.stringify({
         genbaCd: genbaCd,
         date: date,
@@ -91,7 +85,7 @@ async function sendStamp(action) {
         displayName: profile.displayName
       })
     });
-//log("6: fetch成功");
+log("6: fetch成功");
 
     const result = await response.json();
 
@@ -106,7 +100,7 @@ async function sendStamp(action) {
       }
     }
  // URLから action を取得
-//log("0: action取得");
+log("0: action取得");
     const params = new URLSearchParams(window.location.search);
     const action = params.get("action");
 
