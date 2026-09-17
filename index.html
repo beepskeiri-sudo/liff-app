@@ -58,8 +58,7 @@ async function sendStamp(action) {
     }
     // 修正ポイント2: パラメータをURLからではなくLIFFコンテキストから取る
     // (LINE内ブラウザで開いている場合、こちらの方が確実です)
-    const context = liff.getContext();
-    const profile = await liff.getProfile();
+  
 //log("3: profile取得成功");
  
  // URLパラメータ取得
