@@ -49,7 +49,7 @@ async function sendStamp() {
     isProcessing = true;
 try { 
 // liffIdセット
-log("1: liff.init開始");
+//log("1: liff.init開始");
 //log(window.location.href);
   try {
   //if (window.parent !== window) {
@@ -59,7 +59,7 @@ log("1: liff.init開始");
   //}    
   await liff.init({ liffId: "2009820268-v3E9yC4f", withLoginOnExternalBrowser: true 
     });
-  log("2: liff.init成功");
+  //log("2: liff.init成功");
 } catch (err) {
 //  console.log("LIFF INIT ERROR: " + JSON.stringify(err));
     isProcessing = false;
@@ -73,7 +73,7 @@ log("1: liff.init開始");
     // 修正ポイント2: パラメータをURLからではなくLIFFコンテキストから取る
     // (LINE内ブラウザで開いている場合、こちらの方が確実です)
   
-log("3: profile取得成功");
+//log("3: profile取得成功");
   
     const context = liff.getContext();
     console.log("LIFF context:", context);
@@ -84,10 +84,10 @@ log("3: profile取得成功");
     const genbaCd = params.get("genba");
     const date = params.get("date");
 
- log(`4: データ取得成功 (action:${action})`);
+ //log(`4: データ取得成功 (action:${action})`);
 
     document.getElementById("message").innerText = "送信中...";
-log("5: fetch開始");
+//log("5: fetch開始");
 
  // エンドポイントURLを変更
      const response = await fetch("https://script.google.com/macros/s/AKfycbyQqdkxzv88kkfp3dQntI1hWOZVhh8HxIBxIr9v9IP6jeMijmDC-1YgpuIBHokNgJ0/exec", 
@@ -101,7 +101,7 @@ log("5: fetch開始");
       })
     }
  );
-log("6: fetch成功");
+//log("6: fetch成功");
 
   // ====================================================== 
   // GASからの結果取得 
@@ -127,7 +127,7 @@ log("6: fetch成功");
 // ========================================================== 
 // LIFF起動時に1回だけ実行 
 // ==========================================================
-log("0: 処理開始");   
+//log("0: 処理開始");   
 
 sendStamp();
 
