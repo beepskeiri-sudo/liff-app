@@ -69,7 +69,7 @@ log("3: profile取得成功");
     const genbaCd = params.get("genba");
     const date = params.get("date");
 
- log("4: データ取得成功 (action:${action})");
+ log(`4: データ取得成功 (action:${action})`);
 
     document.getElementById("message").innerText = "送信中...";
 log("5: fetch開始");
@@ -104,6 +104,7 @@ log("0: action取得");
     const params = new URLSearchParams(window.location.search);
     const action = params.get("action");
 
+sendStamp(action);
 
 </script>
 </body>
