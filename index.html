@@ -2,178 +2,135 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <script src="https://line-scdn.net"></script>
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-  <div id="message"><span>処理中...</span></div>
+  <div id="message">処理中...</div>
   <style>
   #message {
-    font-size: 56px;
-    font-weight: bold;
-    color: #222;
-    text-align: center;
+    font-size: 56px;          /* 文字を大きく */
+    font-weight: bold;        /* 太字 */
+    color: #222;              /* 濃い文字色 */
+    text-align: center;       /* 横中央 */
+
     display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    height: 100vh;
+    justify-content: center;  /* 横中央 */
+    align-items: center;      /* 縦中央 */
+
+    height: 100vh;            /* 画面全体の高さ */
     width: 100%;
+
     line-height: 1.5;
     padding: 20px;
-    background-color: #f9f9f9;
-    white-space: pre-line;
-    box-sizing: border-box;
-  }
-  .close-trigger {
-    display: inline-block;
-    margin-top: 40px;
-    font-size: 40px;
-    color: #e03131;
-    cursor: pointer;
-    text-decoration: underline;
-  }
-  </style>
+
+    background-color: #f9f9f9; /* 背景色 */
+    white-space: pre-line;     /* \n を改行として表示 */
+    }
+   </style>
 
   <script>
+　　// ========================================================== 
+    // 二重送信防止 
+    // ==========================================================
     let isProcessing = false;
-
-    // ★ 履歴から開かれた（＝すでに処理が成功して完了している）かを判定
-    let isFinished = history.state && history.state.qrHandled === true;
-   
+    
     function log(msg) {
-      document.getElementById("message").innerHTML = `<span>${msg}</span>`;
+      document.getElementById("message").innerText = msg;
       console.log(msg);
     }
 
-    // ★ GASへの送信が【成功】したときだけ、処理済みの履歴を書き込む
-    function markAsHandled() {
-      isFinished = true;
-      try {
-        const currentState = history.state || {};
-        history.replaceState(
-          { ...currentState, qrHandled: true },
-          document.title,
-          window.location.href
-        );
-        console.log("このQR起動を処理済みにしました");
-      } catch (e) {
-        console.error("history.stateの保存に失敗しました", e);
-      }
-    }
-
-    function closeWindow() {
-      // 念のため閉じる前にも完了フラグを立てる
-      markAsHandled();
-      try {
-        document.documentElement.innerHTML = "";
-      } catch (e) {
-        console.error("HTML画面削除エラー", e);
-      }
-
-      try {
-        if (typeof liff !== 'undefined' && liff.isInClient()) {
-          liff.closeWindow();
-        } else {
-          window.close();
-        }
-      } catch (e) {
-        console.error("画面を閉じる際のエラー", e);
-      }
-    }
-
+    // ========================================================== 
     // 打刻処理 
-    async function sendStamp() {
-      // ① すでに処理開始済みなら何もしない
-      if (isProcessing) { 
-        console.log("すでに処理中のため送信しません"); 
-        return; 
-      }
+    // ==========================================================
+async function sendStamp() {
+  
+    if (isProcessing) { console.log("すでに処理中のため送信しません"); return; }
+// 処理開始 
+    isProcessing = true;
+try { 
+// liffIdセット
+//log("1: liff.init開始");
+//log(window.location.href);
+  try {
+  //if (window.parent !== window) {
+  // iframeの中にいる場合、親ウィンドウのURLを確認する処理
+  // GASの場合は回避が難しいことが多いため、
+  // 以下の設定で初期化を試みる
+  //}    
+  await liff.init({ liffId: "2009820268-v3E9yC4f", withLoginOnExternalBrowser: true 
+    });
+  //log("2: liff.init成功");
+} catch (err) {
+//  console.log("LIFF INIT ERROR: " + JSON.stringify(err));
+    isProcessing = false;
+    document.getElementById("message").innerText = "LIFFの初期化に失敗しました。";
+    return;
+}
+  if (!liff.isLoggedIn()) {
+      liff.login();
+      return;
+    }
+    // 修正ポイント2: パラメータをURLからではなくLIFFコンテキストから取る
+    // (LINE内ブラウザで開いている場合、こちらの方が確実です)
+  
+//log("3: profile取得成功");
+  
+    const context = liff.getContext();
+    console.log("LIFF context:", context);
+    const profile = await liff.getProfile();
+// URLパラメータ取得    
+    const params = new URLSearchParams(window.location.search);
+    const action = params.get("action");
+    const genbaCd = params.get("genba");
+    const date = params.get("date");
 
-      // ② 過去に成功済みの履歴（タスク残り）なら、送信せずにメッセージを出して止める
-      if (isFinished) {
-        console.log("この起動はすでに成功済みのため送信しません");
-        document.getElementById("message").innerHTML = `
-          <span>この打刻は完了しています</span>
-          <div class="close-trigger" onclick="closeWindow()">✕ 閉じる</div>
-        `;
-        return;
-      }
- 
-      isProcessing = true;
+ //log(`4: データ取得成功 (action:${action})`);
 
-      try { 
-        try {
-          await liff.init({ 
-            liffId: "2009820268-v3E9yC4f", 
-            withLoginOnExternalBrowser: true 
-          });
-        } catch (err) {
-          console.error(err);
-          // 💡 初期化失敗時は markAsHandled() を呼ばず、エラー画面にしてリトライ可能にする
-          isProcessing = false; // ロック解除
-          document.getElementById("message").innerHTML =
-            "<span>LIFFの初期化に失敗しました。再読み込みしてください。</span>" +
-            '<div class="close-trigger" onclick="closeWindow()">✕ 閉じる</div>';
-          return;
-        }
+    document.getElementById("message").innerText = "送信中...";
+//log("5: fetch開始");
 
-        if (!liff.isLoggedIn()) {
-          liff.login();
-          return;
-        }
-    
-        const context = liff.getContext();
-        const profile = await liff.getProfile();
+ // エンドポイントURLを変更
+     const response = await fetch("https://script.google.com/macros/s/AKfycbyQqdkxzv88kkfp3dQntI1hWOZVhh8HxIBxIr9v9IP6jeMijmDC-1YgpuIBHokNgJ0/exec", 
+      { method: "POST",
+      body: JSON.stringify({
+        genbaCd: genbaCd,
+        date: date,
+        action: action,
+        userId: profile.userId,
+        displayName: profile.displayName
+      })
+    }
+ );
+//log("6: fetch成功");
 
-        // 💡 LINE内ブラウザでのパラメータ消失を防ぐため、liffの推奨方式を併用
-        const searchStr = liff.isInClient() ? liff.getSearchString() : window.location.search;
-        const params = new URLSearchParams(searchStr);
+  // ====================================================== 
+  // GASからの結果取得 
+  // ======================================================
+    const result = await response.json();
 
-        const action = params.get("action");
-        const genbaCd = params.get("genba");
-        const date = params.get("date");
-
-        // 💡 画面を「送信中...」に切り替え
-        document.getElementById("message").innerHTML = "<span>送信中...</span>";
-
-        const response = await fetch("https://google.com", { 
-          method: "POST",
-          body: JSON.stringify({
-            genbaCd: genbaCd,
-            date: date,
-            action: action,
-            userId: profile.userId,
-            displayName: profile.displayName
-          })
-        });
-
-        const result = await response.json();
-        const msgText = result.message || "完了しました";
-
-        // 💡 【重要】GASへの送信が「成功」した後にだけ、完了マークをつける
-        markAsHandled();
-        
-        document.getElementById("message").innerHTML = `
-          <span>${msgText}</span>
-          <div class="close-trigger" onclick="closeWindow()">✕ 閉じる</div>
-        `;       
+        document.getElementById("message").innerText = 
+          result.message || "完了しました";
+/// 成功したら1.5秒後に自動でウィンドウを閉じる
+        setTimeout(() => {
+        liff.closeWindow();
+        }, 200);
 
       } catch (e) {
         console.error(e);
-        const errMsg = "エラーが発生しました。\n" + e;
-       
-        // 💡 通信エラーなどの場合も markAsHandled() は呼ばず、やり直せるようにする
-        isProcessing = false; // ロック解除
-  
-        document.getElementById("message").innerHTML = `
-          <span>${errMsg}</span>
-          <div class="close-trigger" onclick="closeWindow()">✕ 閉じる</div>
-        `;
+        document.getElementById("message").innerText = 
+        "エラーが発生しました。\n" + e;  
+     
+     // エラーの場合だけ再実行可能にする 
+        isProcessing = false;
       }
     }
+// ========================================================== 
+// LIFF起動時に1回だけ実行 
+// ==========================================================
+//log("0: 処理開始");   
 
-    // 起動
-    sendStamp();
-  </script>
+sendStamp();
+
+</script>
 </body>
 </html>
