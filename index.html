@@ -46,117 +46,111 @@
     // ==========================================================
     let isProcessing = false;
     // ==========================================================
-    // 今回のQR処理が完了したか
+    // ★ このHTML起動が以前処理済みか確認
+    //
+    // history.state は「このページの起動」に紐づくため、
+    // 古いタスクを開き直した場合は true になります。
+    //
+    // 新しくQRを読み取って起動した場合は
+    // 新しいページになるため false です。
     // ==========================================================
-    let isFinished = false;
-    // ==========================================================
-    // このLIFF起動がすでに処理済みか確認
-    // ==========================================================
-    let alreadyProcessed = false;
-
-    // ==========================================================
-    // URLから今回の処理を識別するキーを作る
-    // ==========================================================
-    const currentParams =
-      new URLSearchParams(window.location.search);
-
-    const currentAction =
-      currentParams.get("action") || "";
-
-    const currentGenbaCd =
-      currentParams.get("genba") || "";
-
-    const currentDate =
-      currentParams.get("date") || "";
-
-
-    const storageKey =
-      "QR_STAMP_PROCESSED_" +
-      currentAction + "_" +
-      currentGenbaCd + "_" +
-      currentDate;
-
-    // ==========================================================
-    // ★追加
-    // sessionStorageに処理済み記録があるか確認
-    // ==========================================================
-    try {
-
-      if (sessionStorage.getItem(storageKey) === "1") {
-
-        alreadyProcessed = true;
-
-        console.log(
-          "この処理はすでに完了しています。"
-        );
-
-      }
-
-    } catch (e) {
-
-      console.error(
-        "sessionStorage確認エラー:",
-        e
-      );
-
-    }
-    
+    let isFinished =
+      history.state &&
+      history.state.qrHandled === true;
+   
     function log(msg) {
       document.getElementById("message").innerHTML = `<span>${msg}</span>`;
       console.log(msg);
     }
+
+     // ==========================================================
+    // ★ このQR起動を「処理済み」として記録
+    // ==========================================================
+    function markAsHandled() {
+
+      isFinished = true;
+
+      try {
+
+        const currentState = history.state || {};
+
+        history.replaceState(
+          {
+            ...currentState,
+            qrHandled: true
+          },
+          document.title,
+          window.location.href
+        );
+
+        console.log("このQR起動を処理済みにしました");
+
+      } catch (e) {
+
+        console.error(
+          "history.stateの保存に失敗しました",
+          e
+        );
+
+      }
+    }
+
     // ◆ ボタンを押した時に実行される閉じる関数
     function closeWindow() {
       // ------------------------------------------
-      // すでに処理完了していることを記録
+      // この起動を終了済みにする
       // ------------------------------------------
-      isFinished = true;
-      
+      markAsHandled();
+
+      // ------------------------------------------
+      // ★ HTML画面の中身を完全に消す
+      // ------------------------------------------
+      try {
+
+        document.documentElement.innerHTML = "";
+
+      } catch (e) {
+
+        console.error(
+          "HTML画面削除エラー",
+          e
+        );
+
+      }
+
+      // ------------------------------------------
+      // LIFFを閉じる
+      // ------------------------------------------
+      try {
       if (typeof liff !== 'undefined' && liff.isInClient()) {
         liff.closeWindow();
       } else {
         window.close();
+      } catch (e) {
+
+        console.error(
+          "画面を閉じる際のエラー",
+          e
+        );
+
       }
     }
     // ========================================================== 
     // 打刻処理 
     // ==========================================================
 async function sendStamp() {
+    
     // ========================================================
-    // ★追加
-    // すでに処理済みならGASを実行しない
-    // ========================================================
-      if (alreadyProcessed) {
-
-        console.log(
-          "処理済みのタスクなのでGASへ送信しません"
-        );
-
-        document.getElementById("message").innerHTML = `
-          <span>この処理はすでに終了しています。</span>
-          <div
-            class="close-trigger"
-            onclick="closeWindow()"
-          >
-            ✕ 閉じる
-          </div>
-        `;
-
-        return;
-      }
-  
-  
-  // ========================================================
     // ① すでに処理開始済みなら何もしない
     // ========================================================
     if (isProcessing) { console.log("すでに処理中のため送信しません"); return; }
     // ========================================================
-    // ② すでに処理完了している場合も何もしない
+    // ② ★このHTML起動がすでに終了済みなら何もしない
     // ========================================================
     if (isFinished) {
 
         console.log(
-          "すでに処理完了しているため送信しません"
+          "このQR起動はすでに終了済みのため送信しません"
         );
        return;
     }
@@ -180,17 +174,20 @@ try {
    console.error(err);
 
    // ----------------------------------------------
-   // LIFF初期化失敗
-   // この起動から再送信はさせない
+   //★ 初期化失敗でも、この起動は終了済みにする
    // ---------------------------------------------
-    isFinished = true;
+    markAsHandled();
+
     document.getElementById("message").innerHTML =
             "<span>LIFFの初期化に失敗しました。</span>" +
             '<div class="close-trigger" onclick="closeWindow()">✕ 閉じる</div>';
 
     return;
 }
-    
+
+   // ======================================================
+   // ログイン確認
+   // ======================================================
   if (!liff.isLoggedIn()) {
       liff.login();
       return;
@@ -233,35 +230,18 @@ try {
   // ======================================================
     const result = await response.json();
     const msgText = result.message || "完了しました";
-  // ======================================================
-  // ★★★ 最重要 ★★★
-  //
-  // GAS処理が正常終了したら
-  // このLIFF起動を「処理済み」と記録
-  // ======================================================
-        try {
-
-          sessionStorage.setItem(
-            storageKey,
-            "1"
-          );
-
-        } catch (e) {
-
-          console.error(
-            "処理済み記録エラー:",
-            e
-          );
-
-        }
-  // ======================================================
-  // ★今回のQR処理は完了
-  // ======================================================
-    isFinished = true;
-
-    alreadyProcessed = true;
-
-  // ◆【修正ポイント】自動終了の setTimeout を削除し、メッセージの下に「✕ 閉じる」を追加
+        // ======================================================
+        // ★重要
+        //
+        // GAS処理が完了した時点で
+        // この「HTML起動」を処理済みにする
+        //
+        // これにより、後から古いタスクを開いても
+        // sendStamp() は再実行されません。
+        // ======================================================
+        markAsHandled();
+        
+   // ◆【修正ポイント】自動終了の setTimeout を削除し、メッセージの下に「✕ 閉じる」を追加
   document.getElementById("message").innerHTML = `
       <span>${msgText}</span>
       <div class="close-trigger" onclick="closeWindow()">✕ 閉じる</div>
@@ -272,8 +252,13 @@ try {
         const errMsg = "エラーが発生しました。\n" + e;
        
      
-    // ◆ エラーでも再送信可能には戻さない
-        isFinished = true;
+        // ====================================================
+        // ★エラーの場合も、この起動は終了済みにする
+        //
+        // 古いタスクを開き直して勝手に再送信しないため。
+        // ====================================================
+        markAsHandled();
+
   
         document.getElementById("message").innerHTML = `
           <span>${errMsg}</span>
