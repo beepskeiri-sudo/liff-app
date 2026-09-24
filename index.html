@@ -5,7 +5,8 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-  <div id="message">処理中...</div>
+ <!-- ◆ 内部にボタンを埋め込めるよう、spanタグで囲いました -->
+  <div id="message"><span>処理中...</span></div>
   <style>
   #message {
     font-size: 56px;          /* 文字を大きく */
@@ -14,6 +15,7 @@
     text-align: center;       /* 横中央 */
 
     display: flex;
+    flex-direction: column;   /* ◆ メッセージと✕を縦に並べるために追加 */
     justify-content: center;  /* 横中央 */
     align-items: center;      /* 縦中央 */
 
@@ -25,6 +27,16 @@
 
     background-color: #f9f9f9; /* 背景色 */
     white-space: pre-line;     /* \n を改行として表示 */
+    box-sizing: border-box;    /* ◆ パディングによる崩れ防止 */  
+    }
+    /* ◆ 追加した ✕ ボタン（テキスト風リンク）のスタイル */
+    .close-trigger {
+      display: inline-block;
+      margin-top: 40px;
+      font-size: 40px;
+      color: #e03131;          /* 押しやすい赤色 */
+      cursor: pointer;
+      text-decoration: underline;
     }
    </style>
 
@@ -35,10 +47,17 @@
     let isProcessing = false;
     
     function log(msg) {
-      document.getElementById("message").innerText = msg;
+      document.getElementById("message").innerHTML = `<span>${msg}</span>`;
       console.log(msg);
     }
-
+    // ◆ ボタンを押した時に実行される閉じる関数
+    function closeWindow() {
+      if (typeof liff !== 'undefined' && liff.isInClient()) {
+        liff.closeWindow();
+      } else {
+        window.close();
+      }
+    }
     // ========================================================== 
     // 打刻処理 
     // ==========================================================
@@ -63,9 +82,10 @@ try {
 } catch (err) {
 //  console.log("LIFF INIT ERROR: " + JSON.stringify(err));
     isProcessing = false;
-    document.getElementById("message").innerText = "LIFFの初期化に失敗しました。";
+    document.getElementById("message").innerHTML = "<span>LIFFの初期化に失敗しました。</span>";
     return;
 }
+    
   if (!liff.isLoggedIn()) {
       liff.login();
       return;
@@ -86,7 +106,7 @@ try {
 
  //log(`4: データ取得成功 (action:${action})`);
 
-    document.getElementById("message").innerText = "送信中...";
+    document.getElementById("message").innerHTML = "<span>送信中...</span>";
 //log("5: fetch開始");
 
  // エンドポイントURLを変更
@@ -107,20 +127,24 @@ try {
   // GASからの結果取得 
   // ======================================================
     const result = await response.json();
-
-        document.getElementById("message").innerText = 
-          result.message || "完了しました";
-/// 成功したら1.5秒後に自動でウィンドウを閉じる
-        setTimeout(() => {
-        liff.closeWindow();
-        }, 200);
+    const msgText = result.message || "完了しました";
+ // ◆【修正ポイント】自動終了の setTimeout を削除し、メッセージの下に「✕ 閉じる」を追加
+  document.getElementById("message").innerHTML = `
+      <span>${msgText}</span>
+      <div class="close-trigger" onclick="closeWindow()">✕ 閉じる</div>
+      `;       
 
       } catch (e) {
         console.error(e);
-        document.getElementById("message").innerText = 
+        const errMsg = "エラーが発生しました。\n" + e;
         "エラーが発生しました。\n" + e;  
      
-     // エラーの場合だけ再実行可能にする 
+    // ◆ エラー時も「✕ 閉じる」を表示
+        document.getElementById("message").innerHTML = `
+          <span>${errMsg}</span>
+          <div class="close-trigger" onclick="closeWindow()">✕ 閉じる</div>
+        `;
+    // エラーの場合だけ再実行可能にする 
         isProcessing = false;
       }
     }
