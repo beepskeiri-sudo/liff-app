@@ -5,7 +5,8 @@
   <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
 </head>
 <body>
-  <div id="message">処理中...</div>
+ <!-- ◆ 内部にボタンを埋め込めるよう、spanタグで囲いました -->
+  <div id="message"><span>処理中...</span></div>
   <style>
   #message {
     font-size: 56px;          /* 文字を大きく */
@@ -14,6 +15,7 @@
     text-align: center;       /* 横中央 */
 
     display: flex;
+    flex-direction: column;   /* ◆ メッセージと✕を縦に並べるために追加 */
     justify-content: center;  /* 横中央 */
     align-items: center;      /* 縦中央 */
 
@@ -25,6 +27,16 @@
 
     background-color: #f9f9f9; /* 背景色 */
     white-space: pre-line;     /* \n を改行として表示 */
+    box-sizing: border-box;    /* ◆ パディングによる崩れ防止 */  
+    }
+    /* ◆ 追加した ✕ ボタン（テキスト風リンク）のスタイル */
+    .close-trigger {
+      display: inline-block;
+      margin-top: 40px;
+      font-size: 40px;
+      color: #e03131;          /* 押しやすい赤色 */
+      cursor: pointer;
+      text-decoration: underline;
     }
    </style>
 
@@ -33,19 +45,123 @@
     // 二重送信防止 
     // ==========================================================
     let isProcessing = false;
+    // ==========================================================
+    // 今回のQR処理が完了したか
+    // ==========================================================
+    let isFinished = false;
+    // ==========================================================
+    // このLIFF起動がすでに処理済みか確認
+    // ==========================================================
+    let alreadyProcessed = false;
+
+    // ==========================================================
+    // URLから今回の処理を識別するキーを作る
+    // ==========================================================
+    const currentParams =
+      new URLSearchParams(window.location.search);
+
+    const currentAction =
+      currentParams.get("action") || "";
+
+    const currentGenbaCd =
+      currentParams.get("genba") || "";
+
+    const currentDate =
+      currentParams.get("date") || "";
+
+
+    const storageKey =
+      "QR_STAMP_PROCESSED_" +
+      currentAction + "_" +
+      currentGenbaCd + "_" +
+      currentDate;
+
+    // ==========================================================
+    // ★追加
+    // sessionStorageに処理済み記録があるか確認
+    // ==========================================================
+    try {
+
+      if (sessionStorage.getItem(storageKey) === "1") {
+
+        alreadyProcessed = true;
+
+        console.log(
+          "この処理はすでに完了しています。"
+        );
+
+      }
+
+    } catch (e) {
+
+      console.error(
+        "sessionStorage確認エラー:",
+        e
+      );
+
+    }
     
     function log(msg) {
-      document.getElementById("message").innerText = msg;
+      document.getElementById("message").innerHTML = `<span>${msg}</span>`;
       console.log(msg);
     }
-
+    // ◆ ボタンを押した時に実行される閉じる関数
+    function closeWindow() {
+      // ------------------------------------------
+      // すでに処理完了していることを記録
+      // ------------------------------------------
+      isFinished = true;
+      
+      if (typeof liff !== 'undefined' && liff.isInClient()) {
+        liff.closeWindow();
+      } else {
+        window.close();
+      }
+    }
     // ========================================================== 
     // 打刻処理 
     // ==========================================================
 async function sendStamp() {
+    // ========================================================
+    // ★追加
+    // すでに処理済みならGASを実行しない
+    // ========================================================
+      if (alreadyProcessed) {
+
+        console.log(
+          "処理済みのタスクなのでGASへ送信しません"
+        );
+
+        document.getElementById("message").innerHTML = `
+          <span>この処理はすでに終了しています。</span>
+          <div
+            class="close-trigger"
+            onclick="closeWindow()"
+          >
+            ✕ 閉じる
+          </div>
+        `;
+
+        return;
+      }
   
+  
+  // ========================================================
+    // ① すでに処理開始済みなら何もしない
+    // ========================================================
     if (isProcessing) { console.log("すでに処理中のため送信しません"); return; }
-// 処理開始 
+    // ========================================================
+    // ② すでに処理完了している場合も何もしない
+    // ========================================================
+    if (isFinished) {
+
+        console.log(
+          "すでに処理完了しているため送信しません"
+        );
+       return;
+    }
+ 
+  // 処理開始 
     isProcessing = true;
 try { 
 // liffIdセット
@@ -61,11 +177,20 @@ try {
     });
   //log("2: liff.init成功");
 } catch (err) {
-//  console.log("LIFF INIT ERROR: " + JSON.stringify(err));
-    isProcessing = false;
-    document.getElementById("message").innerText = "LIFFの初期化に失敗しました。";
+   console.error(err);
+
+   // ----------------------------------------------
+   // LIFF初期化失敗
+   // この起動から再送信はさせない
+   // ---------------------------------------------
+    isFinished = true;
+    document.getElementById("message").innerHTML =
+            "<span>LIFFの初期化に失敗しました。</span>" +
+            '<div class="close-trigger" onclick="closeWindow()">✕ 閉じる</div>';
+
     return;
 }
+    
   if (!liff.isLoggedIn()) {
       liff.login();
       return;
@@ -86,7 +211,7 @@ try {
 
  //log(`4: データ取得成功 (action:${action})`);
 
-    document.getElementById("message").innerText = "送信中...";
+    document.getElementById("message").innerHTML = "<span>送信中...</span>";
 //log("5: fetch開始");
 
  // エンドポイントURLを変更
@@ -107,18 +232,53 @@ try {
   // GASからの結果取得 
   // ======================================================
     const result = await response.json();
+    const msgText = result.message || "完了しました";
+  // ======================================================
+  // ★★★ 最重要 ★★★
+  //
+  // GAS処理が正常終了したら
+  // このLIFF起動を「処理済み」と記録
+  // ======================================================
+        try {
 
-        document.getElementById("message").innerText = 
-          result.message || "完了しました";
+          sessionStorage.setItem(
+            storageKey,
+            "1"
+          );
 
+        } catch (e) {
+
+          console.error(
+            "処理済み記録エラー:",
+            e
+          );
+
+        }
+  // ======================================================
+  // ★今回のQR処理は完了
+  // ======================================================
+    isFinished = true;
+
+    alreadyProcessed = true;
+
+  // ◆【修正ポイント】自動終了の setTimeout を削除し、メッセージの下に「✕ 閉じる」を追加
+  document.getElementById("message").innerHTML = `
+      <span>${msgText}</span>
+      <div class="close-trigger" onclick="closeWindow()">✕ 閉じる</div>
+      `;       
 
       } catch (e) {
         console.error(e);
-        document.getElementById("message").innerText = 
-        "エラーが発生しました。\n" + e;  
+        const errMsg = "エラーが発生しました。\n" + e;
+       
      
-     // エラーの場合だけ再実行可能にする 
-        isProcessing = false;
+    // ◆ エラーでも再送信可能には戻さない
+        isFinished = true;
+  
+        document.getElementById("message").innerHTML = `
+          <span>${errMsg}</span>
+          <div class="close-trigger" onclick="closeWindow()">✕ 閉じる</div>
+        `;
       }
     }
 // ========================================================== 
