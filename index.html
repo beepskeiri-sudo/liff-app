@@ -110,10 +110,7 @@ try {
 
         document.getElementById("message").innerText = 
           result.message || "完了しました";
-/// 成功したら1.5秒後に自動でウィンドウを閉じる
-        setTimeout(() => {
-        liff.closeWindow();
-        }, 200);
+
 
       } catch (e) {
         console.error(e);
