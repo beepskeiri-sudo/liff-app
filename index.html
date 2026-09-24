@@ -45,6 +45,10 @@
     // 二重送信防止 
     // ==========================================================
     let isProcessing = false;
+    // ==========================================================
+    // 今回のQR処理が完了したか
+    // ==========================================================
+    let isFinished = false;
     
     function log(msg) {
       document.getElementById("message").innerHTML = `<span>${msg}</span>`;
@@ -52,6 +56,11 @@
     }
     // ◆ ボタンを押した時に実行される閉じる関数
     function closeWindow() {
+      // ------------------------------------------
+      // すでに処理完了していることを記録
+      // ------------------------------------------
+      isFinished = true;
+      
       if (typeof liff !== 'undefined' && liff.isInClient()) {
         liff.closeWindow();
       } else {
@@ -62,9 +71,22 @@
     // 打刻処理 
     // ==========================================================
 async function sendStamp() {
-  
+    // ========================================================
+    // ① すでに処理開始済みなら何もしない
+    // ========================================================
     if (isProcessing) { console.log("すでに処理中のため送信しません"); return; }
-// 処理開始 
+    // ========================================================
+    // ② すでに処理完了している場合も何もしない
+    // ========================================================
+    if (isFinished) {
+
+        console.log(
+          "すでに処理完了しているため送信しません"
+        );
+       return;
+    }
+ 
+  // 処理開始 
     isProcessing = true;
 try { 
 // liffIdセット
@@ -80,9 +102,17 @@ try {
     });
   //log("2: liff.init成功");
 } catch (err) {
-//  console.log("LIFF INIT ERROR: " + JSON.stringify(err));
-    isProcessing = false;
-    document.getElementById("message").innerHTML = "<span>LIFFの初期化に失敗しました。</span>";
+   console.error(err);
+
+   // ----------------------------------------------
+   // LIFF初期化失敗
+   // この起動から再送信はさせない
+   // ---------------------------------------------
+    isFinished = true;
+    document.getElementById("message").innerHTML =
+            "<span>LIFFの初期化に失敗しました。</span>" +
+            '<div class="close-trigger" onclick="closeWindow()">✕ 閉じる</div>';
+
     return;
 }
     
@@ -128,7 +158,12 @@ try {
   // ======================================================
     const result = await response.json();
     const msgText = result.message || "完了しました";
- // ◆【修正ポイント】自動終了の setTimeout を削除し、メッセージの下に「✕ 閉じる」を追加
+  // ======================================================
+  // ★今回のQR処理は完了
+  // ======================================================
+    isFinished = true;
+ 
+  // ◆【修正ポイント】自動終了の setTimeout を削除し、メッセージの下に「✕ 閉じる」を追加
   document.getElementById("message").innerHTML = `
       <span>${msgText}</span>
       <div class="close-trigger" onclick="closeWindow()">✕ 閉じる</div>
@@ -137,15 +172,15 @@ try {
       } catch (e) {
         console.error(e);
         const errMsg = "エラーが発生しました。\n" + e;
-        "エラーが発生しました。\n" + e;  
+       
      
-    // ◆ エラー時も「✕ 閉じる」を表示
+    // ◆ エラーでも再送信可能には戻さない
+        isFinished = true;
+  
         document.getElementById("message").innerHTML = `
           <span>${errMsg}</span>
           <div class="close-trigger" onclick="closeWindow()">✕ 閉じる</div>
         `;
-    // エラーの場合だけ再実行可能にする 
-        isProcessing = false;
       }
     }
 // ========================================================== 
