@@ -109,13 +109,16 @@
 
   // ==========================================================
   // 処理終了後
-  //
   // index.htmlを再利用せず、
-  // 完全に「終了ページ」へ移動する
+  // パラメータを完全に破壊してから終了ページへ移動する
   // ==========================================================
 
   function goToEndPage(message) {
-
+  // 1. まず現在のURLからパラメータ（?action=...）を履歴ごと消し去る
+    if (window.history.replaceState) {
+      window.history.replaceState(null, null, window.location.pathname);
+    }
+  // 2. その上で終了ページへ移動  
     const endUrl =
       "end.html?message=" +
       encodeURIComponent(message);
