@@ -10,10 +10,11 @@
     body {
       margin: 0;
       background-color: #f9f9f9;
+      font-family: sans-serif;
     }
 
     #message {
-      font-size: 56px;
+      font-size: 32px;
       font-weight: bold;
       color: #222;
       text-align: center;
@@ -32,8 +33,8 @@
 
     .close-trigger {
       display: inline-block;
-      margin-top: 40px;
-      font-size: 40px;
+      margin-top: 30px;
+      font-size: 24px;
       color: #e03131;
       cursor: pointer;
       text-decoration: underline;
@@ -84,29 +85,7 @@
 
     }
   }
-
-
-  // ==========================================================
-  // LIFFを閉じる
-  // ==========================================================
-
-  function closeWindow() {
-
-    if (
-      typeof liff !== "undefined" &&
-      liff.isInClient()
-    ) {
-
-      liff.closeWindow();
-
-    } else {
-
-      window.close();
-
-    }
-  }
-
-
+  
   // ==========================================================
   // 処理終了後
   // index.htmlを再利用せず、
@@ -119,13 +98,8 @@
       window.history.replaceState(null, null, window.location.pathname);
     }
   // 2. その上で終了ページへ移動  
-    const endUrl =
-      "end.html?message=" +
-      encodeURIComponent(message);
-
-    window.location.replace(endUrl);
+    window.location.replace("end.html?message=" + encodeURIComponent(message));
   }
-
 
   // ==========================================================
   // 打刻処理
@@ -237,23 +211,8 @@
 
       const result =
         await response.json();
-
-
-      const message =
-        result.message ||
-        "処理が完了しました。";
-
-
-      // ------------------------------------------------------
-      // ★重要
-      //
-      // index.htmlにはもう戻らない
-      //
-      // 「終了専用ページ」へ移動
-      // ------------------------------------------------------
-
-      goToEndPage(message);
-
+       // 「終了専用ページ」へ移動
+      goToEndPage(result.message || "処理が完了しました。");     
 
     } catch (error) {
 
