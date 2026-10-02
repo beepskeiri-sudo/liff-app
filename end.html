@@ -33,7 +33,7 @@
     }
 
     .message {
-      font-size: 48px;
+      font-size: 32px;
       font-weight: bold;
       line-height: 1.6;
 
@@ -44,7 +44,7 @@
     .sub {
       margin-top: 30px;
 
-      font-size: 28px;
+      font-size: 24px;
       font-weight: normal;
 
       color: #666;
@@ -75,9 +75,11 @@
   // LINEのキャッシュ対策：すでに一度表示されたかをセッションに記録
   // これが「true」ということは、裏で眠っていたタブが叩き起こされた証拠
   if (sessionStorage.getItem("is_liff_ended")) {
-    // 叩き起こされた瞬間に、何もせずLINEを強制的に閉じる
-    alert("画面を閉じます"); // 必要に応じて残すか、消してもOK
-    closeAppImmediate();
+    if (typeof liff !== "undefined" && liff.closeWindow) {
+      liff.closeWindow();
+    } else {
+      window.close();
+    }
   } else {
     // 初回起動時のみ、フラグを立てる
     sessionStorage.setItem("is_liff_ended", "true");
@@ -107,27 +109,7 @@
     }
   }
 
-   // 即時クローズ用
-  function closeAppImmediate() {
-    // LIFF SDKが読み込まれるのを待たずに閉じに行く
-    if (typeof liff !== "undefined" && liff.closeWindow) {
-      liff.closeWindow();
-    } else {
-      window.close();
-    }
-  }
   
-  // ==========================================================
-  // 2. 自作ボタン用（もし画面に閉じるボタンを配置したくなったら使えます）
-  // ==========================================================
-  function closeApp() {
-    if (typeof liff !== "undefined" && liff.isInClient()) {
-      liff.closeWindow();
-    } else {
-      window.close();
-    }
-  }
-
   // ==========================================================
   // 3. 画面が開いた瞬間に実行する
   // ==========================================================
