@@ -8,7 +8,8 @@
     name="viewport"
     content="width=device-width, initial-scale=1.0"
   >
-
+  <!-- 必ずLIFFのSDKを読み込ませます -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
   <title>処理終了</title>
 
   <style>
@@ -70,27 +71,48 @@
 
 
 <script>
+  const LIFF_ID = "2009820268-v3E9yC4f";
 
   // ==========================================================
-  // URLから処理結果のメッセージを表示
+  // 1. 超重要：履歴からの再起動・2重動作を防ぐ処理（定義と実行）
   // ==========================================================
+  async function cleanAndInit() {
+    try {
+      // 先にメッセージを画面に表示（URLが書き換わる前に取得するため）
+      const params = new URLSearchParams(window.location.search);
+      const message = params.get("message");
+      if (message) {
+        document.getElementById("message").textContent = message;
+      }
 
-  const params =
-    new URLSearchParams(
-      window.location.search
-    );
+      // 終了画面でもLIFFを初期化する
+      await liff.init({ liffId: LIFF_ID });
 
-  const message =
-    params.get("message");
-
-  if (message) {
-
-    document.getElementById("message")
-      .textContent = message;
-
+      // ★初期化完了後、即座にURL履歴から「?message=...」を完全に消去して上書きする
+      if (window.history.replaceState) {
+        window.history.replaceState(null, null, window.location.pathname);
+      }
+    } catch (error) {
+      console.error("LIFFの初期化に失敗しました", error);
+    }
   }
 
-</script>
+  // ==========================================================
+  // 2. 自作ボタン用（もし画面に閉じるボタンを配置したくなったら使えます）
+  // ==========================================================
+  function closeApp() {
+    if (typeof liff !== "undefined" && liff.isInClient()) {
+      liff.closeWindow();
+    } else {
+      window.close();
+    }
+  }
 
+  // ==========================================================
+  // 3. 画面が開いた瞬間に実行する
+  // ==========================================================
+  cleanAndInit();
+  
+</script>
 </body>
 </html>
