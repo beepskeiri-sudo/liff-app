@@ -209,8 +209,22 @@
       // GASから結果取得
       // ------------------------------------------------------
 
-      const result =
-        await response.json();
+      const responseText = await response.text();
+
+      let result;
+
+      try {
+          result = JSON.parse(responseText);
+      } catch (error) {
+          console.error("GAS応答がJSONではありません:", responseText);
+
+          showMessage(
+            "通信結果を確認できませんでした。\n管理者に確認してください。",
+          true
+      );
+
+       return;
+      }
        // 「終了専用ページ」へ移動
       goToEndPage(result.message || "処理が完了しました。");     
 
