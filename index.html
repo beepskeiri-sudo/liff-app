@@ -40,7 +40,7 @@
       50% { opacity: 1.0; }
       100% { opacity: 0.3; }
     }
-/* ─────────────────────────────────
+/* ─────────────────────────────────*/
     .close-trigger {
       display: inline-block;
       margin-top: 30px;
@@ -226,7 +226,11 @@
             })
           }
         );
-
+      // ─── 【強化】GASから応答が戻った瞬間に、最優先でタイマーを完全に破壊する ───
+      if (congestionTimer) {
+        clearTimeout(congestionTimer);
+        congestionTimer = null; 
+      }
 
       // ------------------------------------------------------
       // GASから結果取得
