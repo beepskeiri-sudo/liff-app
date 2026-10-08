@@ -30,7 +30,17 @@
       padding: 20px;
       box-sizing: border-box;
     }
+/* ─── 【追加】文字をふわふわ点滅させるアニメーション ─── */
+    .blink {
+      animation: pulse 1.5s infinite ease-in-out;
+    }
 
+    @keyframes pulse {
+      0% { opacity: 0.3; }
+      50% { opacity: 1.0; }
+      100% { opacity: 0.3; }
+    }
+/* ─────────────────────────────────
     .close-trigger {
       display: inline-block;
       margin-top: 30px;
@@ -44,7 +54,7 @@
 
 <body>
 
-  <div id="message">
+  <div id="message" class="blink">
     処理中...
   </div>
 
@@ -64,11 +74,18 @@
   // ==========================================================
   // メッセージ表示
   // ==========================================================
-
-  function showMessage(message, showClose = false) {
+  // 【変更】第3引数に isBlink (点滅させるかどうか) を追加
+  function showMessage(message, showClose = false, isBlink = false) {
 
     const element = document.getElementById("message");
-
+    
+    // 点滅クラスの付け外し
+    if (isBlink) {
+      element.classList.add("blink");
+    } else {
+      element.classList.remove("blink");
+    }
+    
     if (showClose) {
 
       element.innerHTML =
@@ -106,7 +123,8 @@
   // ==========================================================
 
   async function sendStamp() {
-
+    let congestionTimer = null; // 【追加】混雑表示用のタイマー保持変数
+    
     try {
 
       // 最初にLIFFを初期化する
@@ -157,7 +175,7 @@
 
         showMessage(
           "パラメーターの取得ができませんでした。",
-          true
+          true,false
         );
 
         return;
@@ -174,9 +192,14 @@
       // ------------------------------------------------------
       // 送信中表示
       // ------------------------------------------------------
+      // 【変更】点滅を有効(true)にして「送信中...」を表示
+      showMessage("送信中...", false, true);
 
-      showMessage("送信中...");
-
+      // ─── 【追加】もしGASからの返答が3秒以上かかった場合の処理 ───
+      // 前の人が打刻中でロック待ちになっている場合、3秒後にメッセージを切り替えます
+      congestionTimer = setTimeout(() => {
+        showMessage("ただいま混雑しています。\nそのまましばらくお待ちください...", false, true);
+      }, 3000); // 3000ミリ秒 = 3秒
 
       // ------------------------------------------------------
       // GASへ送信
@@ -220,7 +243,7 @@
 
           showMessage(
             "通信結果を確認できませんでした。\n管理者に確認してください。",
-          true
+          true,false
       );
 
        return;
@@ -229,13 +252,17 @@
       goToEndPage(result.message || "処理が完了しました。");     
 
     } catch (error) {
-
+      // ─── 【追加】エラー発生時もタイマーが動いていれば解除 ───
+      if (congestionTimer) {
+        clearTimeout(congestionTimer);
+      }
+      // ───────────────────────────────
       console.error(error);
 
       showMessage(
         "エラーが発生しました。\n" +
         error,
-        true
+        true,false
       );
 
     }
