@@ -17,9 +17,9 @@
       font-size: 32px;
       font-weight: bold;
       color: #222;
+      text-align: center;  
 
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
 
@@ -31,11 +31,9 @@
       box-sizing: border-box;
     }
     /* メッセージ本文は左揃え */ 
-    .message-text { 
-      text-align: left; 
-      width: 100%; 
-      max-width: 600px; 
-      overflow-wrap: anywhere; 
+    #message.result {
+      flex-direction: column;
+      text-align: left;
     }
     
 /* ─── 【追加】文字をふわふわ点滅させるアニメーション ─── */
@@ -69,9 +67,6 @@
   <div class="message-text">
     処理中...
   </div>
-  <div class="close-trigger"> 
-    ✕閉じる 
-  </div>
 
 <script>
 
@@ -92,6 +87,7 @@
   function showMessage(message, showClose = false, isBlink = false) {
 
     const element = document.getElementById("message");
+    element.classList.toggle("result", showClose);
     
     // 点滅クラスの付け外し
     if (isBlink) {
