@@ -98,7 +98,7 @@
       const params = new URLSearchParams(window.location.search);
       const message = params.get("message");
       if (message) {
-        document.getElementById("message").textContent = message;
+        document.getElementById("message").innerHTML = message;
       }
 
       // 終了画面でもLIFFを初期化する
