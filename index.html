@@ -17,9 +17,9 @@
       font-size: 32px;
       font-weight: bold;
       color: #222;
-      text-align: center;
 
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
 
@@ -30,6 +30,14 @@
       padding: 20px;
       box-sizing: border-box;
     }
+    /* メッセージ本文は左揃え */ 
+    .message-text { 
+      text-align: left; 
+      width: 100%; 
+      max-width: 600px; 
+      overflow-wrap: anywhere; 
+    }
+    
 /* ─── 【追加】文字をふわふわ点滅させるアニメーション ─── */
     .blink {
       animation: pulse 1.5s infinite ease-in-out;
@@ -40,14 +48,17 @@
       50% { opacity: 1.0; }
       100% { opacity: 0.3; }
     }
-/* ─────────────────────────────────*/
+
+    /* ✕閉じるは改行して中央揃え */
     .close-trigger {
-      display: inline-block;
+      display: block;
       margin-top: 30px;
       font-size: 24px;
       color: #e03131;
       cursor: pointer;
       text-decoration: underline;
+      text-align: center; 
+      width: 100%;
     }
   </style>
 </head>
@@ -55,9 +66,12 @@
 <body>
 
   <div id="message" class="blink">
+  <div class="message-text">
     処理中...
   </div>
-
+  <div class="close-trigger"> 
+    ✕閉じる 
+  </div>
 
 <script>
 
@@ -246,7 +260,7 @@
           console.error("GAS応答がJSONではありません:", responseText);
 
           showMessage(
-            "通信結果を確認できませんでした。\n管理者に確認してください。",
+            "通信結果を確認できませんでした。\nもう一度ＱＲコードを読んでください。\n出勤処理済みとなった場合は処理が完了してます。",
           true,false
       );
 
@@ -264,8 +278,7 @@
       console.error(error);
 
       showMessage(
-        "エラーが発生しました。\n" +
-        error,
+        "エラーが発生しました。\nもう一度ＱＲコードを読んでください。\n出勤処理済みとなった場合は処理が完了してます。" 
         true,false
       );
 
