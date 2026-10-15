@@ -46,18 +46,6 @@
       50% { opacity: 1.0; }
       100% { opacity: 0.3; }
     }
-
-    /* ✕閉じるは改行して中央揃え */
-    .close-trigger {
-      display: block;
-      margin-top: 30px;
-      font-size: 24px;
-      color: #e03131;
-      cursor: pointer;
-      text-decoration: underline;
-      text-align: center; 
-      width: 100%;
-    }
   </style>
 </head>
 
@@ -94,33 +82,9 @@
     } else {
       element.classList.remove("blink");
     }
-    
-    if (showClose) {
-
-      element.innerHTML =
-        "<div>" +
-        message.replace(/\n/g, "<br>") +
-        '<div class="close-trigger" onclick="closeWindow()">' +
-        "✕ 閉じる" +
-        "</div>" +
-        "</div>";
-
-    } else {
-
-      element.textContent = message;
-
-    }
+    element.innerHTML = "<div>" + message.replace(/\n/g, "<br>") + "</div>";
   }
-  // ==========================================================
-  // ウィンドウを閉じる関数（追加）
-  // ==========================================================
-  function closeWindow() {
-    if (liff.isApiAvailable('closeWindow')) {
-      liff.closeWindow();
-    } else {
-      window.close();
-    }
-  }
+       
   // ==========================================================
   // 処理終了後
   // index.htmlを再利用せず、
